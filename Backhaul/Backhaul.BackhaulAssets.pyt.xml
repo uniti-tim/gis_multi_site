@@ -1,0 +1,230 @@
+<metadata xml:lang="en">
+	<Esri>
+		<CreaDate>20161028</CreaDate>
+		<CreaTime>17240400</CreaTime>
+		<ArcGISFormat>1.0</ArcGISFormat>
+		<SyncOnce>TRUE</SyncOnce>
+		<ModDate>20161108</ModDate>
+		<ModTime>12421200</ModTime>
+		<scaleRange>
+			<minScale>150000000</minScale>
+			<maxScale>5000</maxScale>
+		</scaleRange>
+		<ArcGISProfile>ItemDescription</ArcGISProfile>
+	</Esri>
+	<tool xmlns="" name="BackhaulAssets" displayname="Backhaul" toolboxalias="">
+		<arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.2\Help\gp</arcToolboxHelpPath>
+		<parameters>
+			<param name="Remote_Assets" displayname="Remote Assets" type="Required" direction="Input" datatype="Feature Layer" expression="Remote_Assets">
+				<dialogReference>
+
+                    &lt;p&gt;The remote assets point feature class with network locations.&lt;/p&gt;
+                    &lt;p&gt;This feature class is correctly created via the &lt;b&gt;Locate Assets&lt;/b&gt; script.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The remote assets point feature class with network locations.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="Fixed_Assets" displayname="Fixed Assets" type="Required" direction="Input" datatype="Feature Layer" expression="Fixed_Assets">
+				<dialogReference>
+
+                    &lt;p&gt;The fixed assets point feature class with network locations.&lt;/p&gt;
+                    &lt;p&gt;This feature class is correctly created via the &lt;b&gt;Locate Assets&lt;/b&gt; script.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The fixed assets point feature class with network locations.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="Near_Table" displayname="Near Table" type="Required" direction="Input" datatype="Table View" expression="Near_Table">
+				<dialogReference>
+
+                    &lt;p&gt;The near table containing locations from remote to fixed assets.&lt;/p&gt;
+                    &lt;p&gt;This table is correctly created via the &lt;b&gt;Locate Assets&lt;/b&gt; script.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The near table containing locations from remote to fixed assets.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="Closest_Facility" displayname="Closest Facility" type="Required" direction="Input" datatype="Network Analyst Layer" expression="Closest_Facility">
+				<dialogReference>
+
+                    &lt;p&gt;The Closest Facility layer used to solve routes.&lt;/p&gt;
+                    &lt;p&gt;The analysis network must be the same as the one specified in the &lt;b&gt;Locate Assets&lt;/b&gt; script.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The Closest Facility layer used to solve routes.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="folder" displayname="Output Folder" type="Required" direction="Input" datatype="Workspace" expression="folder">
+				<dialogReference>
+
+                    &lt;p&gt;The ouput folder for the routes geodatabase. By default, the name of the file geodatabase is "BackhaulX.gdb" where X is a incrementing number to ensure uniqueness.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The ouput folder for the routes geodatabase.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="max_assets" displayname="Maximum Number of Assets to Search" type="Optional" direction="Input" datatype="Long" expression="{max_assets}">
+				<dialogReference>
+
+                    &lt;p&gt;The maximum number of assets to load as facilities when solving the closest facility layer.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The maximum number of assets to load as facilities when solving the closest facility layer.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="daisy_chain" displayname="Maximum Remote Assets to Daisy Chain" type="Optional" direction="Input" datatype="Long" expression="{daisy_chain}">
+				<dialogReference>
+
+                    &lt;p&gt;The maximum number of remote assets to connect before ignoring other remote assets and only connecting to fixed assets.&lt;/p&gt;
+                    &lt;p&gt;For example, there are four remote assets (A, B, C, D) which are closer to each other than a fixed asset (1).&lt;/p&gt;
+                    &lt;table border="1"&gt;
+                      &lt;tr&gt;
+                        &lt;th&gt;Daisy Values&lt;/th&gt;
+                        &lt;th&gt;0&lt;/th&gt;
+                        &lt;th&gt;1&lt;/th&gt;
+                        &lt;th&gt;2&lt;/th&gt;
+                        &lt;th&gt;3+&lt;/th&gt;
+                      &lt;/tr&gt;
+                      &lt;tr&gt;
+                        &lt;td rowspan="4" align="middle"&gt;&lt;b&gt;Routes&lt;/b&gt;&lt;/td&gt;
+                        &lt;td&gt;A ➝ 1&lt;/td&gt;
+                        &lt;td&gt;A ➝ B&lt;/td&gt;
+                        &lt;td&gt;A ➝ B&lt;/td&gt;
+                        &lt;td&gt;A ➝ B&lt;/td&gt;
+                      &lt;/tr&gt;
+                      &lt;tr&gt;
+                        &lt;td&gt;B ➝ 1&lt;/td&gt;
+                        &lt;td&gt;B ➝ 1&lt;/td&gt;
+                        &lt;td&gt;B ➝ C&lt;/td&gt;
+                        &lt;td&gt;B ➝ C&lt;/td&gt;
+                      &lt;/tr&gt;
+                      &lt;tr&gt;
+                        &lt;td&gt;C ➝ 1&lt;/td&gt;
+                        &lt;td&gt;C ➝ D&lt;/td&gt;
+                        &lt;td&gt;C ➝ 1&lt;/td&gt;
+                        &lt;td&gt;C ➝ D&lt;/td&gt;
+                      &lt;/tr&gt;
+                      &lt;tr&gt;
+                        &lt;td&gt;D ➝ 1&lt;/td&gt;
+                        &lt;td&gt;D ➝ 1&lt;/td&gt;
+                        &lt;td&gt;D ➝ 1&lt;/td&gt;
+                        &lt;td&gt;D ➝ 1&lt;/td&gt;
+                      &lt;/tr&gt;
+                    &lt;/table&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;The maximum number of remote assets to connect before ignoring other remote assets and only connecting to fixed assets.&lt;/p&gt;
+
+                </pythonReference>
+			</param>
+			<param name="extend" displayname="Extend Route to Assets" type="Optional" direction="Input" datatype="Boolean" expression="{extend}">
+				<dialogReference>
+
+                    &lt;p&gt;Specifies whether the route will be extended to the start and end assets.&lt;/p&gt;
+                    &lt;p&gt;
+                        &lt;ul&gt;
+                            &lt;li&gt;Unchecked—The route will end at the network dataset. This is the default.&lt;/li&gt;
+                            &lt;li&gt;Checked—The route will end at the start and end assets.&lt;/li&gt;
+                        &lt;/ul&gt;
+                    &lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>
+
+                    &lt;p&gt;Specifies whether the route will be extended to the start and end assets.&lt;/p&gt;
+                    &lt;p&gt;
+                        &lt;ul&gt;
+                            &lt;li&gt;False—The route will end at the network dataset. This is the default.&lt;/li&gt;
+                            &lt;li&gt;True—The route will end at the start and end assets.&lt;/li&gt;
+                        &lt;/ul&gt;
+                    &lt;/p&gt;
+
+                </pythonReference>
+			</param>
+		</parameters>
+		<summary>Iteratively adds the assets to the Closest Facility Layer and solves the route. Once a remote asset has been routed, it is not included in further solve operations.</summary>
+		<usage>
+			&lt;p&gt;
+				&lt;ul&gt;
+					&lt;li&gt;If the specified Closest Facility layer is present in the ArcMap table of contents, the Network Analyst facilities, incidents, and routes layers will display the current assets being solved.
+					&lt;li&gt;For performance improvements, run the script from ArcCatalog or as a Python script.&lt;/li&gt;&lt;/li&gt;
+				&lt;/ul&gt;
+			&lt;/p&gt;
+		</usage>
+		<scriptExamples>
+			<scriptExample>
+				<title>BackhaulAssets example 1</title>
+				<para>Backhaul assets with the default parameters.</para>
+				<code>import arcpy
+
+# Import toolbox and check out NA extension
+arcpy.env.workspace = "C:/Solutions/BackhaulOptimizationA4TC/MapsAndGDBs"
+arcpy.ImportToolbox("Tools/Backhaul.pyt", "backhaul")
+arcpy.CheckOutExtension("Network")
+
+arcpy.backhaul.BackhaulAssets("Assets.gdb/RemoteAssets", "Assets.gdb/FixedAssets", "Assets.gdb/NearTable"
+                              "D:/streetmap/ClosestFacility.lyr",
+                              arcpy.env.workspace)
+
+arcpy.CheckInExtension("Network")</code>
+			</scriptExample>
+			<scriptExample>
+				<title>BackhaulAssets example 2</title>
+				<para>Backhauling the remote assets with different daisy chain values.</para>
+				<code>import arcpy
+
+# Import toolbox and check out NA extension
+arcpy.env.workspace = "C:/Solutions/BackhaulOptimizationA4TC/MapsAndGDBs"
+arcpy.ImportToolbox("Tools/Backhaul.pyt", "backhaul")
+arcpy.CheckOutExtension("Network")
+
+for i in range(1, 11):
+   arcpy.backhaul.BackhaulAssets("Assets.gdb/RemoteAssets", "Assets.gdb/FixedAssets", "Assets.gdb/NearTable"
+                                 "D:/streetmap/ClosestFacility.lyr",
+                                 arcpy.env.workspace,
+                                 daisy_chain=i)
+
+arcpy.CheckInExtension("Network")</code>
+			</scriptExample>
+		</scriptExamples>
+	</tool>
+	<dataIdInfo>
+		<idCitation>
+			<resTitle>Backhaul</resTitle>
+		</idCitation>
+		<searchKeys>
+			<keyword>backhaul</keyword>
+		</searchKeys>
+	</dataIdInfo>
+	<distInfo>
+		<distributor>
+			<distorFormat>
+				<formatName>ArcToolbox Tool</formatName>
+			</distorFormat>
+		</distributor>
+	</distInfo>
+	<mdHrLv>
+		<ScopeCd value="005"/>
+	</mdHrLv>
+</metadata>

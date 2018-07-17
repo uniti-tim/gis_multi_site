@@ -1,0 +1,136 @@
+<metadata xml:lang="en">
+	<Esri>
+		<CreaDate>20160702</CreaDate>
+		<CreaTime>17062700</CreaTime>
+		<ArcGISFormat>1.0</ArcGISFormat>
+		<SyncOnce>TRUE</SyncOnce>
+		<ModDate>20161110</ModDate>
+		<ModTime>11283000</ModTime>
+		<scaleRange>
+			<minScale>150000000</minScale>
+			<maxScale>5000</maxScale>
+		</scaleRange>
+		<ArcGISProfile>ItemDescription</ArcGISProfile>
+	</Esri>
+	<tool name="LocateAssets" displayname="Locate Assets" toolboxalias="" xmlns="">
+		<arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.2\Help\gp</arcToolboxHelpPath>
+		<parameters>
+			<param name="remote_assets" displayname="Remote Assets" type="Required" direction="Input" datatype="Feature Layer" expression="remote_assets">
+				<dialogReference>
+
+                    &lt;p&gt;The remote assets point feature class.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The remote assets point feature class.</pythonReference>
+			</param>
+			<param name="fixed_assets" displayname="Fixed Assets" type="Optional" direction="Input" datatype="Feature Layer" expression="{fixed_assets}">
+				<dialogReference>
+
+                    &lt;p&gt;The fixed assets point feature class.&lt;/p&gt;
+                    &lt;p&gt;This parameter is disabled when &lt;b&gt;Create Fixed Assets&lt;/b&gt; is Checked.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The fixed assets point feature class. This parameter is not required when create is True.</pythonReference>
+			</param>
+			<param name="in_network_dataset" displayname="Input Analysis Network" type="Required" direction="Input" datatype="Network Dataset Layer" expression="in_network_dataset">
+				<dialogReference>
+
+					&lt;p&gt;The network dataset used to calculate the locations.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The network dataset used to calculate the locations.</pythonReference>
+			</param>
+			<param name="output_folder" displayname="Output Folder" type="Required" direction="Input" datatype="Workspace" expression="output_folder">
+				<dialogReference>
+
+                       &lt;p&gt;The ouput folder for the located assets geodatabase.&lt;/p&gt;
+                       &lt;p&gt;By default, the name of the file geodatabase is "AssetsX.gdb" where X is a incrementing number to ensure uniqueness.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The ouput folder for the located assets geodatabase.</pythonReference>
+			</param>
+			<param name="backbone" displayname="Backbone" type="Optional" direction="Input" datatype="Feature Layer" expression="{backbone}">
+				<dialogReference>
+
+                    &lt;p&gt;The line features to be converted into points.&lt;/p&gt;
+                    &lt;p&gt;This parameter is enabled when &lt;b&gt;Create Fixed Assets&lt;/b&gt; is Checked.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The line features to be converted into points. This parameter is only required when create is True.</pythonReference>
+			</param>
+			<param name="distance_between_points" displayname="Distance Between Points" type="Optional" direction="Input" datatype="Linear unit" expression="{distance_between_points}">
+				<dialogReference>
+
+                    &lt;p&gt;The interval from the beginning of the line at which points are placed along the line.&lt;/p&gt;
+                    &lt;p&gt;This parameter is enabled when &lt;b&gt;Create Fixed Assets&lt;/b&gt; is Checked.&lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>The interval from the beginning of the line at which points are placed along the line. This parameter is only required when create is True.</pythonReference>
+			</param>
+			<param name="create" displayname="Create Fixed Assets" type="Optional" direction="Input" datatype="Boolean" expression="{create}">
+				<dialogReference>
+
+                    &lt;p&gt;Specifies whether to create fixed assets or use provided assets.&lt;/p&gt;
+                    &lt;p&gt;
+                        &lt;ul&gt;
+                            &lt;li&gt;Unchecked—The provided fixed assets will be used. This is the default.&lt;/li&gt;
+                            &lt;li&gt;Checked—Fixed assets will be created at a specified distance along a polyline feature class.&lt;/li&gt;
+                        &lt;/ul&gt;
+                    &lt;/p&gt;
+
+                </dialogReference>
+				<pythonReference>* False—The provided fixed assets will be used. This is the default.* True—Fixed assets will be created at a specified distance along a polyline feature class.</pythonReference>
+			</param>
+		</parameters>
+		<summary>Creates copies of the remote and fixed assets and adds fields that contain the network location of the features. Optionally, a polyline feature class can be converted to points to use as fixed assets.</summary>
+		<usage>
+            &lt;p&gt;
+                &lt;ul&gt;
+                    &lt;li&gt;This tool creates a read-only geodatabase. Any process that causes the OBJECTID field values to change (editing, deleting, or copying features) can potentially cause the backhaul process to fail or give incorrect results. To backhaul only a subset of the assets, use feature layers such as those created by &lt;b&gt;Select Layer by Attribute&lt;/b&gt; or &lt;b&gt;Select Layer by Location.&lt;/b&gt;&lt;/li&gt;
+                    &lt;li&gt;This tool runs significantly faster if the feature classes used as the network sources in the network dataset have a valid and up-to-date spatial index.&lt;/li&gt;
+                &lt;/ul&gt;
+            &lt;/p&gt;
+        </usage>
+		<scriptExamples>
+			<scriptExample>
+				<title>LocateAssets example 1</title>
+				<para>Locate Assets with remote and fixed assets.</para>
+				<code>import arcpy
+arcpy.env.workspace = "C:/Solutions/BackhaulOptimizationA4TC/MapsAndGDBs"
+arcpy.ImportToolbox("tools/Backhaul.pyt", "backhaul")
+arcpy.backhaul.LocateAssets("SampleData.gdb/RemoteAssets", "SampleData.gdb/FixedAssets",
+                            "D:/streetmap/NorthAmerica.gdb/Routing/Routing_ND",
+                            arcpy.env.workspace)</code>
+			</scriptExample>
+			<scriptExample>
+				<title>LocateAssets example 2</title>
+				<para>Locate Assets with remote assets and backbone feature class.</para>
+				<code>import arcpy
+arcpy.env.workspace = "C:/Solutions/BackhaulOptimizationA4TC/MapsAndGDBs"
+arcpy.ImportToolbox("tools/Backhaul.pyt", "backhaul")
+arcpy.backhaul.LocateAssets("SampleData.gdb/RemoteAssets", None,
+                            "D:/streetmap/NorthAmerica.gdb/Routing/Routing_ND",
+                            output_arcpy.env.workspace,
+                            True, "SampleData.gdb/BackboneNetwork", "5000 Feet")</code>
+			</scriptExample>
+		</scriptExamples>
+	</tool>
+	<dataIdInfo>
+		<idCitation>
+			<resTitle>Locate Assets</resTitle>
+		</idCitation>
+		<searchKeys>
+			<keyword>backhaul</keyword>
+		</searchKeys>
+	</dataIdInfo>
+	<distInfo>
+		<distributor>
+			<distorFormat>
+				<formatName>ArcToolbox Tool</formatName>
+			</distorFormat>
+		</distributor>
+	</distInfo>
+	<mdHrLv>
+		<ScopeCd value="005"/>
+	</mdHrLv>
+</metadata>
