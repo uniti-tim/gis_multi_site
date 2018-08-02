@@ -55,14 +55,17 @@ arcpy.AddMessage('- Backhaul Optimization completed successfully')
 
 ##--- Cleanup the output ---##
 arcpy.AddMessage('Cleaning up the output...')
-arcpy.Intersect_analysis(backRoutes,'routes_intersected.shp')
+arcpy.Intersect_analysis(backRoutes,'routes_intersected.shp','ALL','','INPUT')
 arcpy.AddMessage('- Routes intersected.')
 
-arcpy.Erase_analysis(backRoutes,'routes_intersected.shp','routes_erased.shp')
+arcpy.Erase_analysis(backRoutes,'routes_intersected.shp','routes_erased.shp','')
 arcpy.AddMessage('- Overlapping routes erased.')
 
 arcpy.Merge_management(['routes_intersected.shp','routes_erased.shp'],'routes_cleaned.shp')
 arcpy.AddMessage('- Completed cleaning routes.')
+
+arcpy.DeleteIdentical_management('routes_cleaned.shp','Shape','','')
+arcpy.AddMessage('- Duplicate features removed.')
 
 ##--- Add data to map ---##
 cleanRoutes = arcpy.mapping.Layer('routes_cleaned.shp')
