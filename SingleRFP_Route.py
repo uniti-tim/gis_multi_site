@@ -1,10 +1,17 @@
 import arcpy
 import os
 
+##--- Function to grab the unique group names from the input sites field ---##
+def unique_values(table , field):
+    with arcpy.da.SearchCursor(table, [field]) as cursor:
+        return sorted({row[0] for row in cursor})
+
 #Parameters
 inputRFPSites = arcpy.GetParameterAsText(0)
-inputNetwork = arcpy.GetParameterAsText(1)
-outputLocation = arcpy.GetParameterAsText(2)
+inputNameField = arcpy.GetParameterAsText(1)
+userFacilities = arcpy.GetParameterAsText(2) #optional
+inputNetwork = arcpy.GetParameterAsText(3)
+outputLocation = arcpy.GetParameterAsText(4)
 
 #Variables
 arcpy.env.workspace = outputLocation
@@ -20,22 +27,33 @@ backFixedAssets = tempBackhaulOutput + os.sep + 'FixedAssets'
 backRemoteAssets = tempBackhaulOutput + os.sep + 'RemoteAssets'
 backRoutes = tempBackhaulOutput + os.sep + 'Routes'
 
+rfpParentList = unique_values(inputRFPSites,inputNameField)
+
 mxd = arcpy.mapping.MapDocument("CURRENT")
 dataFrame = arcpy.mapping.ListDataFrames(mxd,"*")[0]
 
-##--- Select hub site ---##
-arcpy.MakeFeatureLayer_management(inputRFPSites,'hubSite')
-arcpy.SelectLayerByAttribute_management('hubSite','NEW_SELECTION','"Hub" = 1')
-
-hubNum = arcpy.GetCount_management('hubSite')
 arcpy.AddMessage('**********************************')
-arcpy.AddMessage('Found ' + str(hubNum) + ' Hub Site')
+
+if userFacilities:
+    ##-- User has provided a facilities layer to route to rather than a hub --##
+    arcpy.AddMessage('User Facility layer has been provided...')
+    arcpy.MakeFeatureLayer_management(userFacilities,'hubSites')
+
+    hubNum = arcpy.GetCount_management('hubSites')    
+    arcpy.AddMessage('Found ' + str(hubNum) + ' user facilities.')
+else:
+    ##--- Select hub site ---##
+    arcpy.MakeFeatureLayer_management(inputRFPSites,'hubSites')
+    arcpy.SelectLayerByAttribute_management('hubSites','NEW_SELECTION','"Hub" = 1')
+
+    hubNum = arcpy.GetCount_management('hubSites')    
+    arcpy.AddMessage('Found ' + str(hubNum) + ' Hub Site')
 
 ##--- Locate Assets to hub site against the network ---##
 arcpy.ImportToolbox(scriptLocation + os.sep + 'Backhaul' + os.sep + 'Backhaul.pyt')
 arcpy.AddMessage('Beginning Locate Assets...')
 
-arcpy.LocateAssets_backhaul(inputRFPSites,'hubSite',inputNetwork,outputLocation)
+arcpy.LocateAssets_backhaul(inputRFPSites,'hubSites',inputNetwork,outputLocation)
 arcpy.AddMessage('- Locate Assets completed successfully')
 
 ##--- Backhaul Optimization ---##
