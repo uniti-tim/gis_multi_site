@@ -18,8 +18,8 @@ arcpy.env.overwriteOutput = True
 
 #Variables
 scriptLocation = os.path.split(os.path.realpath(__file__))[0]
-tempLocateOuput = 'BackhaulAssets.gdb'
-tempBackhaulOutput = 'BackhaulResults.gdb'
+tempLocateOuput = outputLocation + os.sep + 'BackhaulAssets.gdb'
+tempBackhaulOutput = outputLocation + os.sep + 'BackhaulResults.gdb'
 tempMXD = scriptLocation + os.sep + "routeMap.mxd"
 
 locFixedAssets = tempLocateOuput + os.sep + 'FixedAssets'
@@ -89,12 +89,12 @@ def makeKML():
     arcpy.AddMessage('- KMZ file created.')
 
 ##--- If the Add to Display checkbox is checked, this is where it's added to ArcMap---##
-def addResults():    
-    arcpy.AddMessage(displayAdd)
-    if displayAdd == True:
+def addResults():
+    if displayAdd == "true":
         mxd = arcpy.mapping.MapDocument("CURRENT")
         dataFrame = arcpy.mapping.ListDataFrames(mxd,"*")[0]
 
+        arcpy.AddMessage('Adding Data to ArcMap...')
         sites = arcpy.mapping.Layer('parent_sites_'+siteName)
         hubs = arcpy.mapping.Layer('hubs_'+siteName)
         routes = arcpy.mapping.Layer('routes_'+siteName)            
@@ -138,15 +138,18 @@ def rfpRoute(inputRFPSites):
         arcpy.AddMessage('User Facility layer has been provided...')
         arcpy.MakeFeatureLayer_management(userFacilities,'hubSites')
 
-        hubNum = arcpy.GetCount_management('hubSites')    
+        hubNum = int(arcpy.GetCount_management('hubSites').getOutput(0))    
         arcpy.AddMessage('Found ' + str(hubNum) + ' user facilities.')
     else:
         ##--- Select hub site ---##
         arcpy.MakeFeatureLayer_management(inputRFPSites,'hubSites')
         arcpy.SelectLayerByAttribute_management('hubSites','NEW_SELECTION','"Hub" = 1')
 
-        hubNum = arcpy.GetCount_management('hubSites')    
+        hubNum = int(arcpy.GetCount_management('hubSites').getOutput(0))
         arcpy.AddMessage('Found ' + str(hubNum) + ' Hub Site')
+
+        if hubNum < 1:
+            return "noHub"
 
     ##--- Locate Assets to hub site against the network ---##
     arcpy.ImportToolbox(scriptLocation + os.sep + 'Backhaul' + os.sep + 'Backhaul.pyt')
@@ -162,7 +165,7 @@ def rfpRoute(inputRFPSites):
 
     arcpy.ImportToolbox(scriptLocation + os.sep + 'Backhaul' + os.sep + 'Backhaul.pyt')
     arcpy.AddMessage('Beginning Backhaul Optimization...')
-    arcpy.BackhaulAssets_backhaul(locRemoteAssets,locFixedAssets,locNearTable,backClosestFacility,outputLocation,"50","10","TRUE")
+    arcpy.BackhaulAssets_backhaul(locRemoteAssets, locFixedAssets, locNearTable, backClosestFacility, outputLocation,"50","10","TRUE")
     arcpy.AddMessage('- Backhaul Optimization completed successfully')
 
     ##--- Cleanup the routes ---##
@@ -220,12 +223,19 @@ def rfpRoute(inputRFPSites):
     arcpy.AddField_management('routes','FolderPath','Text',field_length=255)
     arcpy.AlterField_management('routes','FID_routes_cleaned','FID_Routes','FID_Routes')
     arcpy.MakeFeatureLayer_management('parent_sites_'+siteName,'sites')
-    siteNum = arcpy.GetCount_management('sites')
+    
+    siteNum = int(arcpy.GetCount_management('sites').getOutput(0))
     cursor = arcpy.SearchCursor('sites')
     for row in cursor:
-        arcpy.SelectLayerByAttribute_management('sites',"NEW_SELECTION","\"EntityName\" = '" + row.getValue(siteNameField) + "'")
+        if isinstance(row.getValue(siteNameField),basestring):
+            singleSiteName = "'" + row.getValue(siteNameField) + "'"            
+        else:
+            singleSiteName = str(int(row.getValue(siteNameField)))
+            
+        selection = "\"" + siteNameField + "\" = " + singleSiteName
+        arcpy.SelectLayerByAttribute_management('sites',"NEW_SELECTION",selection)
         arcpy.SelectLayerByLocation_management('routes','INTERSECT','sites')
-        arcpy.CalculateField_management('routes','Site_Name',"'" + row.getValue(siteNameField) + "'",'PYTHON')
+        arcpy.CalculateField_management('routes','Site_Name',singleSiteName,'PYTHON')
         arcpy.CalculateField_management('routes','Type',"'L'",'PYTHON')
         arcpy.SelectLayerByAttribute_management('sites','CLEAR_SELECTION')
         arcpy.SelectLayerByAttribute_management('routes','CLEAR_SELECTION')
@@ -260,12 +270,19 @@ rfpParentList = unique_values(inputRFPSites,inputNameField)
 
 if len(rfpParentList) < 2:
     arcpy.AddMessage('Single RFP Route')
-    siteName = str(rfpParentList[0]).replace(" ","_")
+    os.chdir(outputLocation)
+
+    if isinstance(rfpParentList[0],basestring):
+        siteName = str(rfpParentList[0]).replace(" ","_")
+    else:
+        siteName = str(int(rfpParentList[0]))
+
     arcpy.CreateFileGDB_management(outputLocation,siteName + '.gdb')
     arcpy.env.workspace = siteName + '.gdb'
     
     arcpy.MakeFeatureLayer_management(inputRFPSites,'rfpSites')
     rfpGroup = 'rfpSites'
+
     outputRoute = rfpRoute(rfpGroup)
     tableToCSV(outputRoute,outputLocation + os.sep + siteName + '.csv')
 
@@ -274,7 +291,6 @@ if len(rfpParentList) < 2:
     addResults()
 
     cleanup()
-    ####Add to display if checked
     
 else:
     arcpy.AddMessage('Batch RFP Routing')
@@ -291,22 +307,26 @@ else:
         arcpy.AddMessage('----------------------------------')
         arcpy.AddMessage(RFP)
 
-        siteName = RFP.replace(" ","_")
+        if isinstance(RFP,basestring):
+            siteName = RFP.replace(" ","_")
+            selection = "\"" + inputNameField + "\" = '" + RFP + "'"
+        else:
+            siteName = str(int(RFP))
+            selection = "\"" + inputNameField + "\" = " + str(int(RFP))
         arcpy.CreateFileGDB_management(outputLocation,siteName + '.gdb')
         arcpy.env.workspace = siteName + '.gdb'        
         
         arcpy.MakeFeatureLayer_management(inputRFPSites,'rfpSites')
 
-        selection = "\"" + inputNameField + "\" = '" + RFP + "'"
         rfpGroup = arcpy.SelectLayerByAttribute_management("rfpSites","NEW_SELECTION",selection)
         
         outputRoute = rfpRoute(rfpGroup)
-        tableToCSV(outputRoute,outputLocation + os.sep + siteName + '.csv')
-
-        makeKML()
-
-        addResults()
-
-        cleanup()
+        if outputRoute == "noHub":
+            arcpy.AddMessage('*** No Hubs Provided. Cannot complete for ' + siteName + '. ***')
+        else:
+            tableToCSV(outputRoute,outputLocation + os.sep + siteName + '.csv')
+            makeKML()
+            addResults()
+            cleanup()
 
 arcpy.AddMessage('**********************************')
